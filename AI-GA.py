@@ -6,10 +6,12 @@ Created on Thr Nov 29 2019
 
 using Genetic Algorithm for finding minimum of f(x,y)
 """
-import numpy as np
+
 import random
 import matplotlib.pyplot as plt
 from statistics import mean
+
+
 
 class GeneticAlgorithm():
     def __init__(self,problem):
@@ -27,45 +29,37 @@ class GeneticAlgorithm():
         self.mut_prob=mut_prob
         self.precision=precision
         self.maximize=maximize
-        
         self.generation.clear()
         self.history.clear()
-        self.oldfitness=[]
-      
-        self.initializePopulation()
+        self.generation_fitness.clear()
         
+        self.initializePopulation()
         converge=False
         itr=0
-
         while itr<max_iters and not(converge) :
-            self.oldfitness.clear()
-            self.oldfitness=self.generation_fitness.copy()
             selectedGenoms=self.selection()
             self.crossOver(selectedGenoms)
             self.mutation()
             self.calGenerationFitness()
             itr=itr+1
-            if(self.maximize):
-                if abs(self.history[-1][1]-self.history[-2][1])<error: converge=True
-                else: converge=False
-            else:
-                if abs(self.history[-1][0]-self.history[-2][0])<error: converge=True
-                else: converge=False
+            if abs(self.history[-1][2]-self.history[-2][2])<error: converge=True
+            else: converge=False
+            
  
         
         return self.history,itr
       
     def initializePopulation(self):
-        for i in range(0,self.gen_pop):
+        while len(self.generation)<=self.gen_pop:
             g=[]
             g.clear()
             for j in range(0,self.genomSize):
                 x=format(random.randint(0,pow(2,self.precision)-1),'b')
                 if len(x)<self.precision:
                     x=(self.precision-len(x))*'0'+x
-                g.append(x)   
-            self.generation.append(g)
-       
+                g.append(x) 
+            if not(g in self.generation):
+                self.generation.append(g)
         self.calGenerationFitness()
         
     def calGenerationFitness(self):
@@ -89,7 +83,6 @@ class GeneticAlgorithm():
         self.generation_fitness.sort(reverse=self.maximize)
         for i in range(0,int(abs(self.gen_pop*self.cross_prob))):
             for s in self.generation:
-                
                 if self.generation_fitness[i]==self.calGenomFitness(s): 
                     selectedGenoms.append(s)
                     break
@@ -100,17 +93,16 @@ class GeneticAlgorithm():
         no_offSprings=0
         newGeneration=[]
         tempGen=[]
+        for p in parents:
+            if parents.count(p)>1:
+                parents.remove(p)
         while no_offSprings<self.gen_pop:
-            if len(parents)==0:
-                parents=tempGen.copy()
+            if len(parents)<2:
+                parents.extend(tempGen)
                 tempGen.clear()
-            xx=[x for x in parents if x not in tempGen]
-            if len(xx)==0:
-                parents=tempGen.copy()
-                tempGen.clear()
-                xx=[x for x in parents if x not in tempGen]
-            p1=random.choice(xx)
-            p2=random.choice(xx)
+            
+            p1=random.choice(parents)
+            p2=random.choice(parents)
             while (p1==p2) :
                 p2=random.choice(parents)
             tempGen.append(p1)
@@ -170,5 +162,7 @@ def main():
     plt.show()
 
 main()
+
+
 
 
