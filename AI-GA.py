@@ -20,7 +20,7 @@ class GeneticAlgorithm():
         self.generation=[]
         self.history=[]
         
-    def findOpt(self,genomSize,min_val,max_val,max_iters,gen_pop,cross_prob,mut_prob,precision,error,maximize):
+    def findOpt(self,genomSize,min_val,max_val,max_iters,gen_pop,cross_prob,mut_prob,precision,error,maximize,best_parent=0):
         self.min_val=min_val
         self.max_val=max_val
         self.gen_pop=gen_pop
@@ -28,6 +28,7 @@ class GeneticAlgorithm():
         self.genomSize=genomSize
         self.mut_prob=mut_prob
         self.precision=precision
+        self.best_parent=best_parent
         self.maximize=maximize
         self.generation.clear()
         self.history.clear()
@@ -37,9 +38,12 @@ class GeneticAlgorithm():
         converge=False
         itr=0
         while itr<max_iters and not(converge) :
-            selectedGenoms=self.selection()
-            self.crossOver(selectedGenoms)
-            self.mutation()
+            bestParents=self.bestParent()
+            childs=self.crossOver()
+            mutedChilds=self.mutation(childs)
+            self.generation.clear()
+            self.generation.extend(bestParents)
+            self.generation.extend(mutedChilds)
             self.calGenerationFitness()
             itr=itr+1
             if abs(self.history[-1][2]-self.history[-2][2])<error: converge=True
@@ -78,37 +82,39 @@ class GeneticAlgorithm():
         f=self.problem(state)
         return f
     
-    def selection(self):
-        selectedGenoms=[]
+    def bestParent(self):
+        selectedParents=[]
         self.generation_fitness.sort(reverse=self.maximize)
-        for i in range(0,int(abs(self.gen_pop*self.cross_prob))):
+        for i in range(0,int(self.gen_pop*self.best_parent)):
             for s in self.generation:
                 if self.generation_fitness[i]==self.calGenomFitness(s): 
-                    selectedGenoms.append(s)
+                    selectedParents.append(s)
                     break
-        return selectedGenoms
-                
+        return selectedParents
+    
+              
 
-    def crossOver(self,parents):
-        no_offSprings=0
-        newGeneration=[]
+    def crossOver(self):
+        parents=[]
+        for i in range(0,int(self.gen_pop*self.cross_prob)):
+            for s in self.generation:
+                if self.generation_fitness[i]==self.calGenomFitness(s): 
+                    parents.append(s)
+                    break
+        no_offSprings=0        
+        childs=[]
         tempGen=[]
-        for p in parents:
-            if parents.count(p)>1:
-                parents.remove(p)
-        while no_offSprings<self.gen_pop:
+        while no_offSprings<(self.gen_pop-int(self.best_parent*self.gen_pop)):
             if len(parents)<2:
                 parents.extend(tempGen)
                 tempGen.clear()
-            
+           
             p1=random.choice(parents)
             p2=random.choice(parents)
-            while (p1==p2) :
-                p2=random.choice(parents)
             tempGen.append(p1)
             tempGen.append(p2)
-            parents.remove(p1)
-            parents.remove(p2)
+            if(p1 in parents): parents.remove(p1)
+            if(p2 in parents): parents.remove(p2)
             fraction=random.randint(0,self.precision-1)
             if fraction==0: fraction=1
             c1=[]
@@ -117,15 +123,14 @@ class GeneticAlgorithm():
                c1.append(p1[g][0:fraction]+p2[g][fraction:])
                c2.append(p2[g][0:fraction]+p1[g][fraction:])
             
-            newGeneration.append(c1)
-            newGeneration.append(c2)
+            childs.append(c1)
+            childs.append(c2)
             no_offSprings=no_offSprings+2
-        self.generation.clear()
-        self.generation=newGeneration
+        return childs
 
   
-    def mutation(self):
-        for genom in self.generation:
+    def mutation(self,childs):
+        for genom in childs:
             prob=random.random()
             for gen in genom:
                 if prob<self.mut_prob:
@@ -134,6 +139,7 @@ class GeneticAlgorithm():
                         gen=gen[:i]+'0'+gen[i+1:]
                     else: 
                         gen=gen[:i]+'1'+gen[i+1:]
+        return childs
     
     
     
@@ -162,7 +168,5 @@ def main():
     plt.show()
 
 main()
-
-
 
 
